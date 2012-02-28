@@ -23,6 +23,8 @@ class ThumbnailHelper extends AppHelper {
     private $resizeOption = 'auto';
     private $openedImage = '';
     private $imageResized = '';
+    private $imageType;
+    private $types = array(1 => "gif", "jpeg", "png", "swf", "psd", "wbmp"); // used to determine image type
 
     public function render($image, $params) {
         $this->setup($image, $params);
@@ -78,10 +80,11 @@ class ThumbnailHelper extends AppHelper {
 
     private function openSrcImage() {
         if (file_exists($this->absoluteCachePath . DS . $this->path . DS . $this->srcImage)) {
-            list($width, $heigth) = getimagesize($this->absoluteCachePath . DS . $this->path . DS . $this->srcImage);
+            list($width, $heigth, $type) = getimagesize($this->absoluteCachePath . DS . $this->path . DS . $this->srcImage);
 
             $this->srcWidth = $width;
             $this->srcHeight = $heigth;
+            $this->imageType = $type;
 
             $this->openedImage = $this->openImage($this->absoluteCachePath . DS . $this->path . DS . $this->srcImage);
             return true;
@@ -91,25 +94,23 @@ class ThumbnailHelper extends AppHelper {
     }
 
     private function saveImgCache() {
-        $extension = strtolower(strrchr($this->absoluteCachePath . DS . $this->path . DS . $this->srcImage, '.'));
 
         if (!file_exists($this->absoluteCachePath . DS . $this->cachePath))
             mkdir($this->absoluteCachePath . DS . $this->cachePath, 0777, true);
 
-        switch ($extension) {
-            case '.jpg':
-            case '.jpeg':
+        switch ($this->types[$this->imageType]) {
+            case 'jpeg':
                 if (imagetypes() & IMG_JPG) {
                     imagejpeg($this->imageResized, $this->absoluteCachePath . DS . $this->cachePath . DS . $this->srcImage, $this->quality);
                 }
                 break;
 
-            case '.gif':
+            case 'gif':
                 if (imagetypes() & IMG_GIF) {
                     imagegif($this->imageResized, $this->absoluteCachePath . DS . $this->cachePath . DS . $this->srcImage);
                 }
                 break;
-            case '.png':
+            case 'png':
                 $scaleQuality = round(($imageQuality / 100) * 9);
 
                 $invertScaleQuality = 9 - $scaleQuality;
@@ -151,17 +152,15 @@ class ThumbnailHelper extends AppHelper {
     }
 
     private function openImage($file) {
-        $extension = strtolower(strrchr($file, '.'));
 
-        switch ($extension) {
-            case '.jpg':
-            case '.jpeg':
+        switch ($this->types[$this->imageType]) {
+            case 'jpeg':
                 $img = imagecreatefromjpeg($file);
                 break;
-            case '.gif':
+            case 'gif':
                 $img = imagecreatefromgif($file);
                 break;
-            case '.png':
+            case 'png':
                 $img = imagecreatefrompng($file);
                 break;
             default:
